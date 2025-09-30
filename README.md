@@ -178,32 +178,6 @@ If you want to test the courses feature, create these tables in your Supabase da
    $$;
    ```
 
-   **Option C: Simple user courses with security context**
-   ```sql
-   CREATE OR REPLACE FUNCTION get_my_courses()
-   RETURNS TABLE (
-     id INTEGER,
-     name VARCHAR(255),
-     description TEXT,
-     created_at TIMESTAMPTZ,
-     enrolled_at TIMESTAMPTZ
-   )
-   LANGUAGE SQL
-   SECURITY DEFINER
-   AS $$
-     SELECT 
-       c.id, 
-       c.name, 
-       c.description, 
-       c.created_at,
-       uc.created_at as enrolled_at
-     FROM "Courses" c 
-     INNER JOIN "UserCourses" uc ON c.id = uc.course_id
-     WHERE uc.user_id = auth.uid()
-     ORDER BY c.name;
-   $$;
-   ```
-
 ### Step 5: Configure the App
 
 1. Open `js/config.js` in your code editor

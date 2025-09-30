@@ -97,14 +97,31 @@ If you want to test the courses feature, create these tables in your Supabase da
    ALTER TABLE Courses ENABLE ROW LEVEL SECURITY;
    
    -- UserCourses policies - users can only access their own course enrollments
-   CREATE POLICY "Users can view their own courses" ON UserCourses
-     FOR SELECT USING (auth.uid() = user_id);
-   
-   CREATE POLICY "Users can insert their own courses" ON UserCourses
-     FOR INSERT WITH CHECK (auth.uid() = user_id);
-   
-   CREATE POLICY "Users can delete their own courses" ON UserCourses
-     FOR DELETE USING (auth.uid() = user_id);
+
+  -- Allow authenticated users to SELECT their own rows
+  CREATE POLICY "UserCourses select own" ON public."UserCourses"
+    FOR SELECT
+    TO authenticated
+    USING ((SELECT auth.uid())::uuid = user_id);
+
+  -- Allow authenticated users to INSERT only rows that belong to them
+  CREATE POLICY "UserCourses insert own" ON public."UserCourses"
+    FOR INSERT
+    TO authenticated
+    WITH CHECK ((SELECT auth.uid())::uuid = user_id);
+
+  -- Allow authenticated users to UPDATE only their own rows
+  CREATE POLICY "UserCourses update own" ON public."UserCourses"
+    FOR UPDATE
+    TO authenticated
+    USING ((SELECT auth.uid())::uuid = user_id)
+    WITH CHECK ((SELECT auth.uid())::uuid = user_id);
+
+  -- Allow authenticated users to DELETE only their own rows
+  CREATE POLICY "UserCourses delete own" ON public."UserCourses"
+    FOR DELETE
+    TO authenticated
+    USING ((SELECT auth.uid())::uuid = user_id);
    
    -- Courses policies - all authenticated users can read course information
    CREATE POLICY "Authenticated users can view all courses" ON Courses
@@ -117,33 +134,7 @@ If you want to test the courses feature, create these tables in your Supabase da
 
 6. **Create SQL Functions for Raw SQL Queries (Optional):**
 
-   **Option A: Secure function that respects RLS (Recommended)**
-   ```sql
-   CREATE OR REPLACE FUNCTION get_user_courses(p_user_id UUID DEFAULT NULL)
-   RETURNS TABLE (
-     id INTEGER,
-     name VARCHAR(255),
-     description TEXT,
-     created_at TIMESTAMPTZ,
-     enrolled_at TIMESTAMPTZ
-   )
-   LANGUAGE SQL
-   SECURITY INVOKER  -- Uses caller's permissions, respects RLS
-   AS $$
-     SELECT 
-       c.id, 
-       c.name, 
-       c.description, 
-       c.created_at,
-       uc.created_at as enrolled_at
-     FROM "Courses" c 
-     INNER JOIN "UserCourses" uc ON c.id = uc.course_id
-     WHERE uc.user_id = COALESCE(p_user_id, auth.uid())  -- Use auth.uid() if no parameter
-     ORDER BY c.name;
-   $$;
-   ```
-
-   **Option B: Function that uses current user context (Most Secure)**
+  **Option A: Function that uses current user context (Most Secure)**
    ```sql
    CREATE OR REPLACE FUNCTION get_my_courses()
    RETURNS TABLE (
@@ -261,85 +252,6 @@ php -S localhost:8000
 4. Test Google sign-in
 5. Verify that session persists on page refresh
 
-## 📁 Project Structure
-
-```
-supabase-auth/
-├── index.html          # Main HTML file with forms and dashboard
-├── css/
-│   └── styles.css      # Complete styling for the app
-├── js/
-│   ├── config.js       # Supabase configuration
-│   ├── auth.js         # Authentication logic and Supabase integration
-│   └── app.js          # Main application logic and event handlers
-└── README.md           # This file
-```
-
-## 🔧 Configuration Options
-
-### Email Settings
-
-In your Supabase dashboard under **Authentication** → **Settings**:
-
-- **Enable email confirmations**: Require users to confirm their email
-- **Email templates**: Customize confirmation and recovery emails
-- **Redirect URLs**: Set allowed redirect URLs for email links
-
-### Security Settings
-
-- **JWT expiry**: Configure session duration
-- **Refresh token rotation**: Enhanced security for tokens
-- **Rate limiting**: Prevent abuse with rate limits
-
-## 🎯 Usage Examples
-
-### Email Authentication
-
-```javascript
-// Sign up
-const { data, error } = await authManager.signUp('user@example.com', 'password123');
-
-// Sign in
-const { data, error } = await authManager.signIn('user@example.com', 'password123');
-
-// Sign out
-await authManager.signOut();
-```
-
-### Google OAuth
-
-```javascript
-// Sign in with Google
-await authManager.signInWithGoogle();
-```
-
-### Session Management
-
-```javascript
-// Get current session
-const { session, error } = await authManager.getCurrentSession();
-
-// Listen for auth changes
-authManager.setupAuthListener();
-```
-
-## 🎨 Customization
-
-### Styling
-
-Edit `css/styles.css` to customize the appearance:
-- Colors and themes
-- Layout and spacing
-- Mobile responsiveness
-- Animations and transitions
-
-### Functionality
-
-Extend the app by modifying:
-- `js/auth.js`: Add new authentication methods
-- `js/app.js`: Add new UI interactions
-- `index.html`: Add new form fields or sections
-
 ## 🔍 Troubleshooting
 
 ### Common Issues
@@ -366,26 +278,13 @@ Extend the app by modifying:
    - Ensure cookies are enabled
    - Try clearing browser cache
 
-### Debug Mode
-
-Enable debug logging by opening browser console. The app logs all authentication events and errors.
-
 ## 📚 Resources
 
 - [Supabase Auth Documentation](https://supabase.com/docs/guides/auth)
 - [Supabase JavaScript Client](https://supabase.com/docs/reference/javascript/auth-signup)
 - [Google OAuth Setup Guide](https://support.google.com/cloud/answer/6158849)
 
-## 🤝 Contributing
-
-Feel free to submit issues and enhancement requests!
-
 ## 📄 License
 
 This project is open source and available under the [MIT License](LICENSE).
 
----
-
-**Happy coding!** 🎉
-
-If you encounter any issues, please check the browser console for error messages and refer to the troubleshooting section above.

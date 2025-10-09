@@ -97,31 +97,30 @@ If you want to test the courses feature, create these tables in your Supabase da
    ALTER TABLE Courses ENABLE ROW LEVEL SECURITY;
    
    -- UserCourses policies - users can only access their own course enrollments
+   -- Allow authenticated users to SELECT their own rows
+   CREATE POLICY "UserCourses select own" ON public."UserCourses"
+     FOR SELECT
+     TO authenticated
+     USING ((SELECT auth.uid())::uuid = user_id);
 
-  -- Allow authenticated users to SELECT their own rows
-  CREATE POLICY "UserCourses select own" ON public."UserCourses"
-    FOR SELECT
-    TO authenticated
-    USING ((SELECT auth.uid())::uuid = user_id);
+   -- Allow authenticated users to INSERT only rows that belong to them
+   CREATE POLICY "UserCourses insert own" ON public."UserCourses"
+     FOR INSERT
+     TO authenticated
+     WITH CHECK ((SELECT auth.uid())::uuid = user_id);
 
-  -- Allow authenticated users to INSERT only rows that belong to them
-  CREATE POLICY "UserCourses insert own" ON public."UserCourses"
-    FOR INSERT
-    TO authenticated
-    WITH CHECK ((SELECT auth.uid())::uuid = user_id);
+   -- Allow authenticated users to UPDATE only their own rows
+   CREATE POLICY "UserCourses update own" ON public."UserCourses"
+     FOR UPDATE
+     TO authenticated
+     USING ((SELECT auth.uid())::uuid = user_id)
+     WITH CHECK ((SELECT auth.uid())::uuid = user_id);
 
-  -- Allow authenticated users to UPDATE only their own rows
-  CREATE POLICY "UserCourses update own" ON public."UserCourses"
-    FOR UPDATE
-    TO authenticated
-    USING ((SELECT auth.uid())::uuid = user_id)
-    WITH CHECK ((SELECT auth.uid())::uuid = user_id);
-
-  -- Allow authenticated users to DELETE only their own rows
-  CREATE POLICY "UserCourses delete own" ON public."UserCourses"
-    FOR DELETE
-    TO authenticated
-    USING ((SELECT auth.uid())::uuid = user_id);
+   -- Allow authenticated users to DELETE only their own rows
+   CREATE POLICY "UserCourses delete own" ON public."UserCourses"
+     FOR DELETE
+     TO authenticated
+     USING ((SELECT auth.uid())::uuid = user_id);
    
    -- Courses policies - all authenticated users can read course information
    CREATE POLICY "Authenticated users can view all courses" ON Courses

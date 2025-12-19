@@ -11,7 +11,7 @@ class AuthManager {
     async signUp(email, password) {
         try {
             showLoading(true);
-            const { data, error } = await supabase.auth.signUp({
+            const { data, error } = await window.supabaseClient.auth.signUp({
                 email: email,
                 password: password,
                 options: {
@@ -42,7 +42,7 @@ class AuthManager {
     async signIn(email, password) {
         try {
             showLoading(true);
-            const { data, error } = await supabase.auth.signInWithPassword({
+            const { data, error } = await window.supabaseClient.auth.signInWithPassword({
                 email: email,
                 password: password
             });
@@ -65,7 +65,7 @@ class AuthManager {
     async signInWithGoogle() {
         try {
             showLoading(true);
-            const { data, error } = await supabase.auth.signInWithOAuth({
+            const { data, error } = await window.supabaseClient.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
                     redirectTo: window.location.origin,
@@ -89,7 +89,7 @@ class AuthManager {
     async signOut() {
         try {
             showLoading(true);
-            const { error } = await supabase.auth.signOut();
+            const { error } = await window.supabaseClient.auth.signOut();
             
             if (error) throw error;
             
@@ -112,7 +112,7 @@ class AuthManager {
     // Get current session
     async getCurrentSession() {
         try {
-            const { data: { session }, error } = await supabase.auth.getSession();
+            const { data: { session }, error } = await window.supabaseClient.auth.getSession();
             
             if (error) throw error;
             
@@ -231,7 +231,7 @@ class AuthManager {
 
     // Set up auth state listener
     setupAuthListener() {
-        supabase.auth.onAuthStateChange((event, session) => {
+        window.supabaseClient.auth.onAuthStateChange((event, session) => {
             console.log('Auth state changed:', event);
             
             this.session = session;
@@ -268,7 +268,7 @@ class AuthManager {
     async resetPassword(email) {
         try {
             showLoading(true);
-            const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            const { error } = await window.supabaseClient.auth.resetPasswordForEmail(email, {
                 redirectTo: window.location.origin + '/reset-password'
             });
 
@@ -296,10 +296,10 @@ class AuthManager {
             console.log('Fetching courses for user:', this.user.id);
 
             // Option 1: Using secure SQL function (respects RLS)
-            //const { data, error } = await supabase.rpc('get_my_courses');
+            //const { data, error } = await window.supabaseClient.rpc('get_my_courses');
 
             // Option 2: Using PostgREST API (if SQL function doesn't exist)
-            const { data, error } = await supabase
+            const { data, error } = await window.supabaseClient
                 .from('UserCourses')
                 .select(`
                     course_id,
@@ -334,7 +334,7 @@ class AuthManager {
             console.log('Fetching courses for user:', this.user.id);
 
             // Method 3: Execute raw SQL using custom function
-            const { data, error } = await supabase.rpc('execute_sql', {
+            const { data, error } = await window.supabaseClient.rpc('execute_sql', {
                 sql_query: `
                     SELECT c.id, c.name, c.description, c.created_at, uc.created_at as enrolled_at
                     FROM "Courses" c 
@@ -365,7 +365,7 @@ class AuthManager {
             }
 
             showLoading(true);
-            const { data, error } = await supabase
+            const { data, error } = await window.supabaseClient
                 .from('UserCourses')
                 .insert([
                     { user_id: this.user.id, course_id: courseId }
@@ -395,7 +395,7 @@ class AuthManager {
             }
 
             showLoading(true);
-            const { error } = await supabase
+            const { error } = await window.supabaseClient
                 .from('UserCourses')
                 .delete()
                 .eq('user_id', this.user.id)

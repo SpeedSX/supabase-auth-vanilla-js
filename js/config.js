@@ -10,7 +10,8 @@ if (SUPABASE_URL === 'YOUR_SUPABASE_URL' || SUPABASE_ANON_KEY === 'YOUR_SUPABASE
 }
 
 // Initialize Supabase client
+// Note: window.supabase is the library from CDN, we create a client instance
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Export for use in other files
-window.supabase = supabase;
+// Make the client instance available globally (but don't overwrite window.supabase)
+// The const declaration above already makes it available in the global scope
